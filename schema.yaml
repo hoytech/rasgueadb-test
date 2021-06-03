@@ -1,0 +1,36 @@
+db: example
+
+tables:
+  User:
+    tableId: 1
+
+    fields:
+      - name: userName
+        type: string
+        unique: true
+      - name: passwordHash
+        type: ubytes
+      - name: created
+        index: true
+
+  Phrase:
+    tableId: 2
+
+    fields:
+      - name: words
+        type: string
+
+    indexPrelude: |
+        std::string_view str = v.words();
+        std::vector<std::string_view> splitWords;
+        size_t start, end = 0;
+ 
+        while ((start = str.find_first_not_of(' ', end)) != std::string::npos) {
+            end = str.find(' ', start);
+            splitWords.push_back(str.substr(start, end - start));
+        }
+
+    indices:
+      splitWords:
+        multi: true
+        accessor: 'splitWords'

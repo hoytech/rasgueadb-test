@@ -1,0 +1,9 @@
+[submodule "external/lmdbxx"]
+	path = external/lmdbxx
+	url = https://github.com/hoytech/lmdbxx.git
+[submodule "external/hoytech-cpp"]
+	path = external/hoytech-cpp
+	url = https://github.com/hoytech/hoytech-cpp.git
+[submodule "external/rasgueadb"]
+	path = external/rasgueadb
+	url = https://github.com/hoytech/rasgueadb.git
