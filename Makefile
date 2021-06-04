@@ -1,6 +1,6 @@
-example_test: example_test.cpp external/rasgueadb/*
+example_test: example_test.cpp schema.yaml external/rasgueadb/*
 	external/rasgueadb/rasgueadb-generate schema.yaml build
-	g++ -Wall -O2 -std=c++17 example_test.cpp -llmdb -I build -I external -o example_test
+	g++ -Wall -O2 -std=c++2a example_test.cpp -llmdb -I build -I external -o example_test
 
 .PHONY: test clean
 

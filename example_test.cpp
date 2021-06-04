@@ -48,7 +48,20 @@ int main() {
         verifyThrow(env.insert_User(txn, "jane", "", 3000), "unique constraint violated on User.userName");
     }
 
-    // Lookup single record
+    // Lookup single record by primary key
+
+    {
+        auto txn = env.txn_ro();
+        auto view = env.lookup_User(txn, 2);
+
+        verify(view);
+        verify(view->primaryKeyId == 2);
+        verify(view->userName() == "jane");
+        verify(view->passwordHash() == "\x01\x02\x03");
+        verify(view->created() == 1001);
+    }
+
+    // Lookup single record by index
 
     {
         auto txn = env.txn_ro();
@@ -61,12 +74,22 @@ int main() {
         verify(view->created() == 2000);
     }
 
+    // Lookup single record by index, when there are multiple matches just takes first it finds
+
+    {
+        auto txn = env.txn_ro();
+        auto view = env.lookup_User__created(txn, lmdb::to_sv<uint64_t>(1001));
+
+        verify(view);
+        verify(view->created() == 1001);
+    }
+
     // Update record, no index updates
 
     {
         auto txn = env.txn_rw();
         auto view = env.lookup_User__userName(txn, "alice");
-        env.insert_User(txn, std::nullopt, "\xDD\xEE", std::nullopt, view);
+        env.update_User(txn, *view, { .passwordHash = "\xDD\xEE" });
         txn.commit();
     }
 
@@ -106,7 +129,7 @@ int main() {
         env.foreach_User__userName(txn, [&](example::environment::View_User &view){
             ids.push_back(view.primaryKeyId);
             return true;
-        });
+        }, std::nullopt);
 
         verify(ids == std::vector<uint64_t>({4, 5, 6, 2, 3, 1}));
     }
@@ -195,8 +218,17 @@ int main() {
     {
         auto txn = env.txn_rw();
         auto view = env.lookup_User__userName(txn, "alice");
-        env.insert_User(txn, "zoya", std::nullopt, 1001, view);
+        env.update_User(txn, *view, { .userName = "zoya", .created = 1001, });
         txn.commit();
+    }
+
+    {
+        auto txn = env.txn_rw();
+        auto view = env.lookup_User__userName(txn, "zoya");
+
+        verify(view);
+        verify(view->primaryKeyId == 4);
+        verify(view->userName() == "zoya");
     }
 
     {
@@ -218,6 +250,7 @@ int main() {
         std::vector<uint64_t> ids;
 
         env.foreachDup_User__created(txn, lmdb::to_sv<uint64_t>(1001), [&](example::environment::View_User &view){
+            //std::cout << view.primaryKeyId << ": " << view._str() << std::endl;
             ids.push_back(view.primaryKeyId);
             return true;
         });
@@ -317,7 +350,6 @@ int main() {
         std::vector<uint64_t> ids;
 
         env.foreachDup_Phrase__splitWords(txn, "quick", [&](example::environment::View_Phrase &view){
-            //std::cout << view.primaryKeyId << ": " << view._str() << std::endl;
             ids.push_back(view.primaryKeyId);
             return true;
         });

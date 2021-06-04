@@ -12,6 +12,7 @@ tables:
         type: ubytes
       - name: created
         index: true
+        ## default type is uint64
 
   Phrase:
     tableId: 2
