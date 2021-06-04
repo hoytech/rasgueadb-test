@@ -1,4 +1,5 @@
 #include <iostream>
+#include <algorithm>
 
 #include "build/example.h"
 
@@ -45,7 +46,7 @@ int main() {
 
     {
         auto txn = env.txn_rw();
-        verifyThrow(env.insert_User(txn, "jane", "", 3000), "unique constraint violated on User.userName");
+        verifyThrow(env.insert_User(txn, "jane", "", 3000), "unique constraint violated: User.userName");
     }
 
     // Lookup single record by primary key
@@ -126,7 +127,7 @@ int main() {
 
         std::vector<uint64_t> ids;
 
-        env.foreach_User__userName(txn, [&](example::environment::View_User &view){
+        env.foreach_User__userName(txn, [&](auto &view){
             ids.push_back(view.primaryKeyId);
             return true;
         }, std::nullopt);
@@ -141,7 +142,7 @@ int main() {
 
         std::vector<uint64_t> ids;
 
-        env.foreach_User__userName(txn, [&](example::environment::View_User &view){
+        env.foreach_User__userName(txn, [&](auto &view){
             ids.push_back(view.primaryKeyId);
             return true;
         }, "bob");
@@ -156,7 +157,7 @@ int main() {
 
         std::vector<uint64_t> ids;
 
-        env.foreach_User__created(txn, [&](example::environment::View_User &view){
+        env.foreach_User__created(txn, [&](auto &view){
             ids.push_back(view.primaryKeyId);
             return true;
         });
@@ -171,7 +172,7 @@ int main() {
 
         std::vector<uint64_t> ids;
 
-        env.foreach_User__created(txn, [&](example::environment::View_User &view){
+        env.foreach_User__created(txn, [&](auto &view){
             ids.push_back(view.primaryKeyId);
             if (view.primaryKeyId == 3) return false;
             return true;
@@ -187,7 +188,7 @@ int main() {
 
         std::vector<uint64_t> ids;
 
-        env.foreachDup_User__created(txn, lmdb::to_sv<uint64_t>(1001), [&](example::environment::View_User &view){
+        env.foreachDup_User__created(txn, lmdb::to_sv<uint64_t>(1001), [&](auto &view){
             ids.push_back(view.primaryKeyId);
             return true;
         });
@@ -202,7 +203,7 @@ int main() {
 
         std::vector<uint64_t> ids;
 
-        env.foreachDup_User__created(txn, lmdb::to_sv<uint64_t>(1001), [&](example::environment::View_User &view){
+        env.foreachDup_User__created(txn, lmdb::to_sv<uint64_t>(1001), [&](auto &view){
             ids.push_back(view.primaryKeyId);
             return true;
         }, true);
@@ -236,7 +237,7 @@ int main() {
 
         std::vector<uint64_t> ids;
 
-        env.foreach_User__userName(txn, [&](example::environment::View_User &view){
+        env.foreach_User__userName(txn, [&](auto &view){
             ids.push_back(view.primaryKeyId);
             return true;
         });
@@ -249,7 +250,7 @@ int main() {
 
         std::vector<uint64_t> ids;
 
-        env.foreachDup_User__created(txn, lmdb::to_sv<uint64_t>(1001), [&](example::environment::View_User &view){
+        env.foreachDup_User__created(txn, lmdb::to_sv<uint64_t>(1001), [&](auto &view){
             //std::cout << view.primaryKeyId << ": " << view._str() << std::endl;
             ids.push_back(view.primaryKeyId);
             return true;
@@ -273,7 +274,7 @@ int main() {
 
         std::vector<uint64_t> ids;
 
-        env.foreach_User(txn, [&](example::environment::View_User &view){
+        env.foreach_User(txn, [&](auto &view){
             ids.push_back(view.primaryKeyId);
             return true;
         });
@@ -286,7 +287,7 @@ int main() {
 
         std::vector<uint64_t> ids;
 
-        env.foreach_User__userName(txn, [&](example::environment::View_User &view){
+        env.foreach_User__userName(txn, [&](auto &view){
             ids.push_back(view.primaryKeyId);
             return true;
         });
@@ -299,7 +300,7 @@ int main() {
 
         std::vector<uint64_t> ids;
 
-        env.foreachDup_User__created(txn, lmdb::to_sv<uint64_t>(1001), [&](example::environment::View_User &view){
+        env.foreachDup_User__created(txn, lmdb::to_sv<uint64_t>(1001), [&](auto &view){
             ids.push_back(view.primaryKeyId);
             return true;
         });
@@ -307,6 +308,48 @@ int main() {
         verify(ids == std::vector<uint64_t>({2, 4}));
     }
 
+
+
+
+
+
+    // Computed indices
+
+    {
+        auto txn = env.txn_rw();
+
+        env.insert_Person(txn, "John", "john@GMAIL.COM");
+        env.insert_Person(txn, "john", "John@Yahoo.Com");
+
+        txn.commit();
+    }
+
+    {
+        auto txn = env.txn_ro();
+        auto view = env.lookup_Person__emailLC(txn, "john@gmail.com");
+
+        verify(view);
+        verify(view->primaryKeyId == 1);
+        verify(view->email() == "john@GMAIL.COM");
+    }
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
+
+        env.foreachDup_Person__fullNameLC(txn, "john", [&](auto &view){
+            ids.push_back(view.primaryKeyId);
+            return true;
+        });
+
+        verify(ids == std::vector<uint64_t>({1, 2}));
+    }
+
+    {
+        auto txn = env.txn_rw();
+        verifyThrow(env.insert_Person(txn, "john", "john@Yahoo.Com"), "unique constraint violated: Person.emailLC");
+    }
 
 
 
@@ -330,7 +373,7 @@ int main() {
 
         std::vector<uint64_t> ids;
 
-        env.foreachDup_Phrase__splitWords(txn, "quick", [&](example::environment::View_Phrase &view){
+        env.foreachDup_Phrase__splitWords(txn, "quick", [&](auto &view){
             ids.push_back(view.primaryKeyId);
             return true;
         });
@@ -349,7 +392,7 @@ int main() {
 
         std::vector<uint64_t> ids;
 
-        env.foreachDup_Phrase__splitWords(txn, "quick", [&](example::environment::View_Phrase &view){
+        env.foreachDup_Phrase__splitWords(txn, "quick", [&](auto &view){
             ids.push_back(view.primaryKeyId);
             return true;
         });

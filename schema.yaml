@@ -7,15 +7,39 @@ tables:
     fields:
       - name: userName
         type: string
-        unique: true
+        index:
+          unique: true
       - name: passwordHash
         type: ubytes
       - name: created
         index: true
         ## default type is uint64
 
-  Phrase:
+  Person:
     tableId: 2
+
+    fields:
+      - name: fullName
+        type: string
+      - name: email
+        type: string
+
+    indexPrelude: |
+      std::string fullNameLC = std::string(v.fullName());
+      std::string emailLC = std::string(v.email());
+      std::transform(fullNameLC.begin(), fullNameLC.end(), fullNameLC.begin(), ::tolower);
+      std::transform(emailLC.begin(), emailLC.end(), emailLC.begin(), ::tolower);
+
+    indices:
+      fullNameLC:
+        accessor: 'fullNameLC'
+      emailLC:
+        accessor: 'emailLC'
+        unique: true
+
+
+  Phrase:
+    tableId: 3
 
     fields:
       - name: words
