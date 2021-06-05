@@ -82,7 +82,7 @@ int main() {
 
     {
         auto txn = env.txn_ro();
-        auto view = env.lookup_User__created(txn, lmdb::to_sv<uint64_t>(1001));
+        auto view = env.lookup_User__created(txn, 1001);
 
         verify(view);
         verify(view->created() == 1001);
@@ -213,7 +213,7 @@ int main() {
             ids.push_back(view.primaryKeyId);
             if (view.primaryKeyId == 3) return false;
             return true;
-        }, true, lmdb::to_sv<uint64_t>(1500));
+        }, true, 1500);
 
         verify(ids == std::vector<uint64_t>({5, 6, 3}));
     }
@@ -257,7 +257,7 @@ int main() {
 
         std::vector<uint64_t> ids;
 
-        env.foreachDup_User__created(txn, lmdb::to_sv<uint64_t>(1001), [&](auto &view){
+        env.foreachDup_User__created(txn, 1001, [&](auto &view){
             ids.push_back(view.primaryKeyId);
             return true;
         });
@@ -283,7 +283,7 @@ int main() {
         std::vector<uint64_t> ids;
         uint64_t total;
 
-        env.foreachDup_User__created(txn, lmdb::to_sv<uint64_t>(1001), [&](auto &view){
+        env.foreachDup_User__created(txn, 1001, [&](auto &view){
             ids.push_back(view.primaryKeyId);
             return true;
         }, false, std::nullopt, &total);
@@ -299,7 +299,7 @@ int main() {
 
         std::vector<uint64_t> ids;
 
-        env.foreachDup_User__created(txn, lmdb::to_sv<uint64_t>(1001), [&](auto &view){
+        env.foreachDup_User__created(txn, 1001, [&](auto &view){
             ids.push_back(view.primaryKeyId);
             return true;
         }, true);
@@ -314,7 +314,7 @@ int main() {
 
         std::vector<uint64_t> ids;
 
-        env.foreachDup_User__created(txn, lmdb::to_sv<uint64_t>(1001), [&](auto &view){
+        env.foreachDup_User__created(txn, 1001, [&](auto &view){
             ids.push_back(view.primaryKeyId);
             return true;
         }, false, 5);
@@ -329,7 +329,7 @@ int main() {
 
         std::vector<uint64_t> ids;
 
-        env.foreachDup_User__created(txn, lmdb::to_sv<uint64_t>(1001), [&](auto &view){
+        env.foreachDup_User__created(txn, 1001, [&](auto &view){
             //std::cout << view.primaryKeyId << ": " << view._str() << std::endl;
             ids.push_back(view.primaryKeyId);
             return true;
@@ -379,7 +379,7 @@ int main() {
 
         std::vector<uint64_t> ids;
 
-        env.foreachDup_User__created(txn, lmdb::to_sv<uint64_t>(1001), [&](auto &view){
+        env.foreachDup_User__created(txn, 1001, [&](auto &view){
             ids.push_back(view.primaryKeyId);
             return true;
         });
