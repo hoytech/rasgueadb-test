@@ -1,6 +1,7 @@
 #include <iostream>
 #include <algorithm>
 
+#include "hoytech-cpp/hoytech/assert_zerocopy.h"
 #include "build/example.h"
 
 
@@ -60,6 +61,8 @@ int main() {
         verify(view->userName() == "jane");
         verify(view->passwordHash() == "\x01\x02\x03");
         verify(view->created() == 1001);
+
+        assert_zerocopy(env.lmdb_env.get_internal_map(), view->userName());
     }
 
     // Lookup single record by index
