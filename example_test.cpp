@@ -129,16 +129,35 @@ int main() {
         auto txn = env.txn_ro();
 
         std::vector<uint64_t> ids;
+        uint64_t total;
 
         env.foreach_User__userName(txn, [&](auto &view){
             ids.push_back(view.primaryKeyId);
             return true;
-        }, std::nullopt);
+        }, false, std::nullopt, &total);
 
         verify(ids == std::vector<uint64_t>({4, 5, 6, 2, 3, 1}));
+        verify(total == 6);
     }
 
     // Iterate over string index, start at "bob"
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
+        uint64_t total;
+
+        env.foreach_User__userName(txn, [&](auto &view){
+            ids.push_back(view.primaryKeyId);
+            return true;
+        }, false, "bob", &total);
+
+        verify(ids == std::vector<uint64_t>({5, 6, 2, 3, 1}));
+        verify(total == 6); // full index count
+    }
+
+    // Iterate over string index, start at "amy", which doesn't exist. It should start with bob
 
     {
         auto txn = env.txn_ro();
@@ -148,9 +167,24 @@ int main() {
         env.foreach_User__userName(txn, [&](auto &view){
             ids.push_back(view.primaryKeyId);
             return true;
-        }, "bob");
+        }, false, "amy");
 
         verify(ids == std::vector<uint64_t>({5, 6, 2, 3, 1}));
+    }
+
+    // Iterate over string index in reverse, start at "carol", which doesn't exist. It should start with bob2
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
+
+        env.foreach_User__userName(txn, [&](auto &view){
+            ids.push_back(view.primaryKeyId);
+            return true;
+        }, true, "carol");
+
+        verify(ids == std::vector<uint64_t>({6, 5, 4}));
     }
 
     // Iterate over numeric index
@@ -179,39 +213,9 @@ int main() {
             ids.push_back(view.primaryKeyId);
             if (view.primaryKeyId == 3) return false;
             return true;
-        }, lmdb::to_sv<uint64_t>(1500), true);
+        }, true, lmdb::to_sv<uint64_t>(1500));
 
         verify(ids == std::vector<uint64_t>({5, 6, 3}));
-    }
-
-    // Iterate over dup records in created index
-
-    {
-        auto txn = env.txn_ro();
-
-        std::vector<uint64_t> ids;
-
-        env.foreachDup_User__created(txn, lmdb::to_sv<uint64_t>(1001), [&](auto &view){
-            ids.push_back(view.primaryKeyId);
-            return true;
-        });
-
-        verify(ids == std::vector<uint64_t>({2, 3}));
-    }
-
-    // Iterate over dups in reverse
-
-    {
-        auto txn = env.txn_ro();
-
-        std::vector<uint64_t> ids;
-
-        env.foreachDup_User__created(txn, lmdb::to_sv<uint64_t>(1001), [&](auto &view){
-            ids.push_back(view.primaryKeyId);
-            return true;
-        }, true);
-
-        verify(ids == std::vector<uint64_t>({3, 2}));
     }
 
 
@@ -254,12 +258,84 @@ int main() {
         std::vector<uint64_t> ids;
 
         env.foreachDup_User__created(txn, lmdb::to_sv<uint64_t>(1001), [&](auto &view){
-            //std::cout << view.primaryKeyId << ": " << view._str() << std::endl;
             ids.push_back(view.primaryKeyId);
             return true;
         });
 
         verify(ids == std::vector<uint64_t>({2, 3, 4}));
+    }
+
+
+
+
+    // Iterate over dup records in created index
+
+    {
+        auto txn = env.txn_rw();
+        auto view = env.lookup_User(txn, 6);
+        env.update_User(txn, *view, { .created = 1001, });
+        txn.commit();
+    }
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
+        uint64_t total;
+
+        env.foreachDup_User__created(txn, lmdb::to_sv<uint64_t>(1001), [&](auto &view){
+            ids.push_back(view.primaryKeyId);
+            return true;
+        }, false, std::nullopt, &total);
+
+        verify(ids == std::vector<uint64_t>({2, 3, 4, 6}));
+        verify(total == 4);
+    }
+
+    // Iterate over dups in reverse
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
+
+        env.foreachDup_User__created(txn, lmdb::to_sv<uint64_t>(1001), [&](auto &view){
+            ids.push_back(view.primaryKeyId);
+            return true;
+        }, true);
+
+        verify(ids == std::vector<uint64_t>({6, 4, 3, 2}));
+    }
+
+    // Iterate over dups with starting point
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
+
+        env.foreachDup_User__created(txn, lmdb::to_sv<uint64_t>(1001), [&](auto &view){
+            ids.push_back(view.primaryKeyId);
+            return true;
+        }, false, 5);
+
+        verify(ids == std::vector<uint64_t>({6}));
+    }
+
+    // Iterate over dups in reverse with starting point
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
+
+        env.foreachDup_User__created(txn, lmdb::to_sv<uint64_t>(1001), [&](auto &view){
+            //std::cout << view.primaryKeyId << ": " << view._str() << std::endl;
+            ids.push_back(view.primaryKeyId);
+            return true;
+        }, true, 5);
+
+        verify(ids == std::vector<uint64_t>({4, 3, 2}));
     }
 
 
@@ -308,7 +384,7 @@ int main() {
             return true;
         });
 
-        verify(ids == std::vector<uint64_t>({2, 4}));
+        verify(ids == std::vector<uint64_t>({2, 4, 6}));
     }
 
 
