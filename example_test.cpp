@@ -352,7 +352,37 @@ int main() {
         verify(ids == std::vector<uint64_t>({6}));
     }
 
+    // Iterate over dups with pre-starting point
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
+
+        env.foreachDup_User__created(txn, 1001, [&](auto &view){
+            ids.push_back(view.primaryKeyId);
+            return true;
+        }, false, 1);
+
+        verify(ids == std::vector<uint64_t>({2, 3, 4, 6}));
+    }
+
     // Iterate over dups in reverse with starting point
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
+
+        env.foreachDup_User__created(txn, 1001, [&](auto &view){
+            ids.push_back(view.primaryKeyId);
+            return true;
+        }, true, 5);
+
+        verify(ids == std::vector<uint64_t>({4, 3, 2}));
+    }
+
+    // Iterate over dups in reverse with starting point, skip
 
     {
         auto txn = env.txn_ro();
@@ -363,9 +393,9 @@ int main() {
             //std::cout << view.primaryKeyId << ": " << view._str() << std::endl;
             ids.push_back(view.primaryKeyId);
             return true;
-        }, true, 5);
+        }, true, 500);
 
-        verify(ids == std::vector<uint64_t>({4, 3, 2}));
+        verify(ids == std::vector<uint64_t>({6, 4, 3, 2}));
     }
 
 
@@ -519,12 +549,12 @@ int main() {
     {
         auto txn = env.txn_rw();
 
-        env.insert_SomeRecord(txn, 50, "a");
         env.insert_SomeRecord(txn, 53, "b");
-        env.insert_SomeRecord(txn, 60, "c");
-        env.insert_SomeRecord(txn, 70, "d");
-        env.insert_SomeRecord(txn, 75, "e");
         env.insert_SomeRecord(txn, 99, "f");
+        env.insert_SomeRecord(txn, 70, "d");
+        env.insert_SomeRecord(txn, 60, "c");
+        env.insert_SomeRecord(txn, 75, "e");
+        env.insert_SomeRecord(txn, 50, "a");
 
         txn.commit();
     }
@@ -602,6 +632,21 @@ int main() {
         }, true, 61);
 
         verify(ids == std::vector<uint64_t>({60, 53, 50}));
+    }
+
+    // Iterate over table in reverse with starting point, skip
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
+
+        env.foreach_SomeRecord(txn, [&](auto &view){
+            ids.push_back(view.primaryKeyId);
+            return true;
+        }, true, 100);
+
+        verify(ids == std::vector<uint64_t>({99, 75, 70, 60, 53, 50}));
     }
 
 
