@@ -123,6 +123,36 @@ int main() {
         verify(ids == std::vector<uint64_t>({1, 2, 3, 4, 5, 6}));
     }
 
+    // Iterate over table in reverse
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
+
+        env.foreach_User(txn, [&](auto &view){
+            ids.push_back(view.primaryKeyId);
+            return true;
+        }, true);
+
+        verify(ids == std::vector<uint64_t>({6, 5, 4, 3, 2, 1}));
+    }
+
+    // Iterate over table with starting point
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
+
+        env.foreach_User(txn, [&](auto &view){
+            ids.push_back(view.primaryKeyId);
+            return true;
+        }, false, 3);
+
+        verify(ids == std::vector<uint64_t>({3, 4, 5, 6}));
+    }
+
     // Iterate over string index
 
     {
@@ -478,6 +508,102 @@ int main() {
 
         verify(ids == std::vector<uint64_t>({1, 5}));
     }
+
+
+
+
+
+
+    // Custom primary key
+
+    {
+        auto txn = env.txn_rw();
+
+        env.insert_SomeRecord(txn, 50, "a");
+        env.insert_SomeRecord(txn, 53, "b");
+        env.insert_SomeRecord(txn, 60, "c");
+        env.insert_SomeRecord(txn, 70, "d");
+        env.insert_SomeRecord(txn, 75, "e");
+        env.insert_SomeRecord(txn, 99, "f");
+
+        txn.commit();
+    }
+
+    // Iterate over table
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
+
+        env.foreach_SomeRecord(txn, [&](auto &view){
+            ids.push_back(view.primaryKeyId);
+            return true;
+        });
+
+        verify(ids == std::vector<uint64_t>({50, 53, 60, 70, 75, 99}));
+    }
+
+    // Iterate over table with starting point
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
+
+        env.foreach_SomeRecord(txn, [&](auto &view){
+            ids.push_back(view.primaryKeyId);
+            return true;
+        }, false, 60);
+
+        verify(ids == std::vector<uint64_t>({60, 70, 75, 99}));
+    }
+
+    // Iterate over table with starting point, skip
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
+
+        env.foreach_SomeRecord(txn, [&](auto &view){
+            ids.push_back(view.primaryKeyId);
+            return true;
+        }, false, 61);
+
+        verify(ids == std::vector<uint64_t>({70, 75, 99}));
+    }
+
+    // Iterate over table in reverse with starting point
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
+
+        env.foreach_SomeRecord(txn, [&](auto &view){
+            ids.push_back(view.primaryKeyId);
+            return true;
+        }, true, 60);
+
+        verify(ids == std::vector<uint64_t>({60, 53, 50}));
+    }
+
+    // Iterate over table in reverse with starting point, skip
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
+
+        env.foreach_SomeRecord(txn, [&](auto &view){
+            ids.push_back(view.primaryKeyId);
+            return true;
+        }, true, 61);
+
+        verify(ids == std::vector<uint64_t>({60, 53, 50}));
+    }
+
 
 
     std::cout << "All tests OK." << std::endl;

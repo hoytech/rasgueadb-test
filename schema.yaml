@@ -59,3 +59,13 @@ tables:
       splitWords:
         multi: true
         accessor: 'splitWords'
+
+  SomeRecord:
+    tableId: 4
+
+    primaryKey: altId
+
+    fields:
+      - name: altId
+      - name: junk
+        type: string
