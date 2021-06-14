@@ -23,19 +23,26 @@ tables:
         type: string
       - name: email
         type: string
+      - name: age
+      - name: role
+        type: string
 
     indexPrelude: |
-      std::string fullNameLC = std::string(v.fullName());
-      std::string emailLC = std::string(v.email());
-      std::transform(fullNameLC.begin(), fullNameLC.end(), fullNameLC.begin(), ::tolower);
-      std::transform(emailLC.begin(), emailLC.end(), emailLC.begin(), ::tolower);
+      fullNameLC = std::string(v.fullName());
+      emailLC = std::string(v.email());
+      std::transform(fullNameLC->begin(), fullNameLC->end(), fullNameLC->begin(), ::tolower);
+      std::transform(emailLC->begin(), emailLC->end(), emailLC->begin(), ::tolower);
+
+      if (v.age() >= 18) age = v.age(); // only index adults
+      if (v.role() != "admin") role = v.role(); // don't index admins
 
     indices:
-      fullNameLC:
-        accessor: 'fullNameLC'
+      fullNameLC: true
       emailLC:
-        accessor: 'emailLC'
         unique: true
+      age:
+        integer: true
+      role: true
 
 
   Phrase:
@@ -46,8 +53,7 @@ tables:
         type: string
 
     indexPrelude: |
-        std::string_view str = v.words();
-        std::vector<std::string_view> splitWords;
+        std::string str = std::string(v.words());
         size_t start, end = 0;
  
         while ((start = str.find_first_not_of(' ', end)) != std::string::npos) {
@@ -58,7 +64,6 @@ tables:
     indices:
       splitWords:
         multi: true
-        accessor: 'splitWords'
 
   SomeRecord:
     tableId: 4

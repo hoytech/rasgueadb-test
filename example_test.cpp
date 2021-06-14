@@ -457,8 +457,10 @@ int main() {
     {
         auto txn = env.txn_rw();
 
-        env.insert_Person(txn, "John", "john@GMAIL.COM");
-        env.insert_Person(txn, "john", "John@Yahoo.Com");
+        env.insert_Person(txn, "John", "john@GMAIL.COM", 20, "user");
+        env.insert_Person(txn, "john", "John@Yahoo.Com", 30, "user");
+        env.insert_Person(txn, "alice", "alice@gmail.com", 5, "user");
+        env.insert_Person(txn, "sam", "sam@gmail.com", 40, "admin");
 
         txn.commit();
     }
@@ -487,9 +489,38 @@ int main() {
 
     {
         auto txn = env.txn_rw();
-        verifyThrow(env.insert_Person(txn, "john", "john@Yahoo.Com"), "unique constraint violated: Person.emailLC");
+        verifyThrow(env.insert_Person(txn, "john", "john@Yahoo.Com", 30, "user"), "unique constraint violated: Person.emailLC");
     }
 
+    // Alice is not indexed because age < 18
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
+
+        env.foreach_Person__age(txn, [&](auto &view){
+            ids.push_back(view.primaryKeyId);
+            return true;
+        });
+
+        verify(ids == std::vector<uint64_t>({1, 2, 4}));
+    }
+
+    // Sam is not indexed because role is admin
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
+
+        env.foreach_Person__role(txn, [&](auto &view){
+            ids.push_back(view.primaryKeyId);
+            return true;
+        });
+
+        verify(ids == std::vector<uint64_t>({1, 2, 3}));
+    }
 
 
 
