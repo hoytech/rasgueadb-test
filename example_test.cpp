@@ -39,6 +39,7 @@ int main() {
         env.insert_User(txn, "alice", "\x01\x02\x03", 2000); // 4
         env.insert_User(txn, "bob", "\x01\x02\x03", 1500); // 5
         env.insert_User(txn, "bob2", "\xFF", 1499); // 6
+        env.insert_User(txn, "", "", 0); // 7
 
         txn.commit();
     }
@@ -93,7 +94,8 @@ int main() {
     {
         auto txn = env.txn_rw();
         auto view = env.lookup_User__userName(txn, "alice");
-        env.update_User(txn, *view, { .passwordHash = "\xDD\xEE" });
+        auto ret = env.update_User(txn, *view, { .passwordHash = "\xDD\xEE" });
+        verify(ret != 0);
         txn.commit();
     }
 
@@ -108,6 +110,18 @@ int main() {
         verify(view->created() == 2000);
     }
 
+    // Update record, no changes
+
+    {
+        auto txn = env.txn_rw();
+        auto view = env.lookup_User__userName(txn, "alice");
+
+        auto ret = env.update_User(txn, *view, { .created = 2000 });
+        verify(ret == 0);
+
+        txn.commit();
+    }
+
     // Iterate over table
 
     {
@@ -120,7 +134,7 @@ int main() {
             return true;
         });
 
-        verify(ids == std::vector<uint64_t>({1, 2, 3, 4, 5, 6}));
+        verify(ids == std::vector<uint64_t>({1, 2, 3, 4, 5, 6, 7}));
     }
 
     // Iterate over table in reverse
@@ -135,7 +149,7 @@ int main() {
             return true;
         }, true);
 
-        verify(ids == std::vector<uint64_t>({6, 5, 4, 3, 2, 1}));
+        verify(ids == std::vector<uint64_t>({7, 6, 5, 4, 3, 2, 1}));
     }
 
     // Iterate over table with starting point
@@ -150,7 +164,7 @@ int main() {
             return true;
         }, false, 3);
 
-        verify(ids == std::vector<uint64_t>({3, 4, 5, 6}));
+        verify(ids == std::vector<uint64_t>({3, 4, 5, 6, 7}));
     }
 
     // Iterate over string index
@@ -405,6 +419,7 @@ int main() {
     {
         auto txn = env.txn_rw();
         env.delete_User(txn, 3);
+        env.delete_User(txn, 7);
         txn.commit();
     }
 
