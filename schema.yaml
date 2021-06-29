@@ -74,3 +74,17 @@ tables:
       - name: altId
       - name: junk
         type: string
+
+  MultiRecs:
+    tableId: 5
+
+    fields:
+      - name: strs
+        type: 'string[]'
+        index: true
+      - name: ubytesField
+        type: 'ubytes[]'
+        index: true
+      - name: ints
+        type: 'uint64[]'
+        index: true

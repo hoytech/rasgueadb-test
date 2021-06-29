@@ -404,7 +404,6 @@ int main() {
         std::vector<uint64_t> ids;
 
         env.foreachDup_User__created(txn, 1001, [&](auto &view){
-            //std::cout << view.primaryKeyId << ": " << view._str() << std::endl;
             ids.push_back(view.primaryKeyId);
             return true;
         }, true, 500);
@@ -696,6 +695,128 @@ int main() {
     }
 
 
+
+
+    // Multi records
+
+    {
+        auto txn = env.txn_rw();
+
+        env.insert_MultiRecs(txn, { "hello", "world" }, { "\xFF\xEE", "\xF5\xF5" }, { 3, 4 }); // 1
+
+        {
+            std::vector<std::string> strs = { "goodbye", "world" };
+            env.insert_MultiRecs(txn, env.views(strs), { "\xF5\xF5" }, { 4, 5, 6 }); // 2
+        }
+
+        txn.commit();
+    }
+
+    {
+        auto txn = env.txn_ro();
+
+        auto view = env.lookup_MultiRecs(txn, 1);
+
+        verify(view);
+        verify(view->strs().size() == 2);
+        verify(view->strs()[0] == "hello");
+        verify(view->strs()[1] == "world");
+
+        assert_zerocopy(env.lmdb_env.get_internal_map(), view->strs()[0]);
+    }
+
+    // Iterate over string index
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
+        uint64_t total;
+
+        env.foreach_MultiRecs__strs(txn, [&](auto &view){
+            ids.push_back(view.primaryKeyId);
+            return true;
+        }, false, std::nullopt, &total);
+
+        verify(ids == std::vector<uint64_t>({2, 1, 1, 2}));
+        verify(total == 4);
+    }
+
+    // Iterate over dups
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
+        uint64_t total;
+
+        env.foreachDup_MultiRecs__strs(txn, "world", [&](auto &view){
+            ids.push_back(view.primaryKeyId);
+            return true;
+        }, false, std::nullopt, &total);
+
+        verify(ids == std::vector<uint64_t>({1, 2}));
+        verify(total == 2);
+    }
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
+
+        env.foreachDup_MultiRecs__strs(txn, "goodbye", [&](auto &view){
+            ids.push_back(view.primaryKeyId);
+            return true;
+        });
+
+        verify(ids == std::vector<uint64_t>({2}));
+    }
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
+
+        env.foreachDup_MultiRecs__ubytesField(txn, "\xF5\xF5", [&](auto &view){
+            ids.push_back(view.primaryKeyId);
+            return true;
+        });
+
+        verify(ids == std::vector<uint64_t>({1, 2}));
+    }
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
+
+        env.foreachDup_MultiRecs__ints(txn, 4, [&](auto &view){
+            //std::cout << view.primaryKeyId << ": " << view._str() << std::endl;
+            ids.push_back(view.primaryKeyId);
+            return true;
+        });
+
+        verify(ids == std::vector<uint64_t>({1, 2}));
+    }
+ 
+    {
+        auto txn = env.txn_rw();
+        env.delete_MultiRecs(txn, 1);
+        txn.commit();
+    }
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
+
+        env.foreachDup_MultiRecs__strs(txn, "world", [&](auto &view){
+            ids.push_back(view.primaryKeyId);
+            return true;
+        });
+
+        verify(ids == std::vector<uint64_t>({2}));
+    }
 
     std::cout << "All tests OK." << std::endl;
 
