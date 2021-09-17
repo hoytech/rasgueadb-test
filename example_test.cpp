@@ -411,6 +411,21 @@ int main() {
         verify(ids == std::vector<uint64_t>({6, 4, 3, 2}));
     }
 
+    // Iterate over dups in reverse with starting point, no records
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
+
+        env.foreachDup_User__created(txn, 1001, [&](auto &view){
+            std::cout << view.primaryKeyId << ": " << view._str() << std::endl;
+            ids.push_back(view.primaryKeyId);
+            return true;
+        }, true, 1);
+
+        verify(ids == std::vector<uint64_t>({}));
+    }
 
 
     // Delete
