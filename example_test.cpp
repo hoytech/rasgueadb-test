@@ -597,6 +597,16 @@ int main() {
     }
 
     {
+        auto txn = env.txn_ro();
+
+        auto view = env.lookup_Phrase(txn, 2);
+
+        auto indices = env.getIndices_Phrase(*view);
+
+        verify(indices.splitWords == std::vector<std::string>({ "fox", "jumped", "over" }));
+    }
+
+    {
         auto txn = env.txn_rw();
         env.delete_Phrase(txn, 3);
         txn.commit();
