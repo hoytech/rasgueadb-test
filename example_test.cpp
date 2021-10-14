@@ -309,6 +309,18 @@ int main() {
         verify(ids == std::vector<uint64_t>({2, 3, 4}));
     }
 
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
+
+        env.foreachKey_User__created(txn, [&](auto id){
+            ids.push_back(id);
+            return true;
+        });
+
+        verify(ids == std::vector<uint64_t>({1000, 1001, 1499, 1500}));
+    }
 
 
 
@@ -484,7 +496,6 @@ int main() {
         std::vector<uint64_t> ids;
 
         env.foreachDup_User__created(txn, 1002, [&](auto &view){
-            std::cout << view.primaryKeyId << ": " << view._str() << std::endl;
             ids.push_back(view.primaryKeyId);
             return true;
         }, true, 1);
@@ -530,6 +541,19 @@ int main() {
         });
 
         verify(ids == std::vector<uint64_t>({1, 2}));
+    }
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<std::string> ids;
+
+        env.foreachKey_Person__fullNameLC(txn, [&](auto key){
+            ids.push_back(std::string(key));
+            return true;
+        });
+
+        verify(ids == std::vector<std::string>({"alice", "john", "sam"}));
     }
 
     {
