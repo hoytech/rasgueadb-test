@@ -856,7 +856,6 @@ int main() {
         std::vector<uint64_t> ids;
 
         env.foreachDup_MultiRecs__ints(txn, 4, [&](auto &view){
-            //std::cout << view.primaryKeyId << ": " << view._str() << std::endl;
             ids.push_back(view.primaryKeyId);
             return true;
         });
@@ -882,6 +881,36 @@ int main() {
 
         verify(ids == std::vector<uint64_t>({2}));
     }
+
+
+
+    {
+        auto txn = env.txn_rw();
+
+        env.insert_NullIndices(txn, "", 0); // 1
+        env.insert_NullIndices(txn, "a", 1); // 2
+
+        txn.commit();
+    }
+
+    // Iterate over int index with 0s
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
+        uint64_t total;
+
+        env.foreach_NullIndices__created(txn, [&](auto &view){
+            //std::cout << view.primaryKeyId << ": " << view._str() << std::endl;
+            ids.push_back(view.primaryKeyId);
+            return true;
+        }, false, std::nullopt, &total);
+
+        verify(ids == std::vector<uint64_t>({1, 2}));
+        verify(total == 2);
+    }
+
 
     std::cout << "All tests OK." << std::endl;
 

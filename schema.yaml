@@ -88,3 +88,14 @@ tables:
       - name: ints
         type: 'uint64[]'
         index: true
+
+  NullIndices:
+    tableId: 6
+
+    fields:
+      - name: passwordHash
+        type: ubytes
+        index: true
+      - name: created
+        index:
+          includeZero: true
