@@ -603,6 +603,19 @@ int main() {
         env.foreachKey_Person__fullNameLC(txn, [&](auto key){
             ids.push_back(std::string(key));
             return true;
+        }, false, "jo");
+
+        verify(ids == std::vector<std::string>({"john", "sam"}));
+    }
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<std::string> ids;
+
+        env.foreachKey_Person__fullNameLC(txn, [&](auto key){
+            ids.push_back(std::string(key));
+            return true;
         }, true, "mike");
 
         verify(ids == std::vector<std::string>({"john", "alice"}));
@@ -619,6 +632,19 @@ int main() {
         }, true, "john");
 
         verify(ids == std::vector<std::string>({"john", "alice"}));
+    }
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<std::string> ids;
+
+        env.foreachKey_Person__fullNameLC(txn, [&](auto key){
+            ids.push_back(std::string(key));
+            return true;
+        }, true, "jo"); // sorts before "john" so skips john record
+
+        verify(ids == std::vector<std::string>({"alice"}));
     }
 
     {
