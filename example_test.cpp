@@ -557,6 +557,71 @@ int main() {
     }
 
     {
+        auto txn = env.txn_ro();
+
+        std::vector<std::string> ids;
+
+        env.foreachKey_Person__fullNameLC(txn, [&](auto key){
+            ids.push_back(std::string(key));
+            return true;
+        }, true);
+
+        verify(ids == std::vector<std::string>({"sam", "john", "alice"}));
+    }
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<std::string> ids;
+
+        env.foreachKey_Person__fullNameLC(txn, [&](auto key){
+            ids.push_back(std::string(key));
+            return true;
+        }, false, "bob");
+
+        verify(ids == std::vector<std::string>({"john", "sam"}));
+    }
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<std::string> ids;
+
+        env.foreachKey_Person__fullNameLC(txn, [&](auto key){
+            ids.push_back(std::string(key));
+            return true;
+        }, false, "john");
+
+        verify(ids == std::vector<std::string>({"john", "sam"}));
+    }
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<std::string> ids;
+
+        env.foreachKey_Person__fullNameLC(txn, [&](auto key){
+            ids.push_back(std::string(key));
+            return true;
+        }, true, "mike");
+
+        verify(ids == std::vector<std::string>({"john", "alice"}));
+    }
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<std::string> ids;
+
+        env.foreachKey_Person__fullNameLC(txn, [&](auto key){
+            ids.push_back(std::string(key));
+            return true;
+        }, true, "john");
+
+        verify(ids == std::vector<std::string>({"john", "alice"}));
+    }
+
+    {
         auto txn = env.txn_rw();
         verifyThrow(env.insert_Person(txn, "john", "john@Yahoo.Com", 30, "user"), "unique constraint violated: Person.emailLC");
     }
