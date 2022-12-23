@@ -99,3 +99,19 @@ tables:
       - name: created
         index:
           includeZero: true
+
+  AltOrder:
+    tableId: 7
+
+    fields:
+      - name: desc
+        type: string
+        index: true
+      - name: created
+
+    indices:
+      descByCreated:
+        altOrder: true
+
+    indexPrelude: |
+      descByCreated.push_back({ std::string(v.desc()), v.created() });

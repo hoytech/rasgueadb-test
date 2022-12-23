@@ -993,7 +993,6 @@ int main() {
         uint64_t total;
 
         env.foreach_NullIndices__created(txn, [&](auto &view){
-            //std::cout << view.primaryKeyId << ": " << view._str() << std::endl;
             ids.push_back(view.primaryKeyId);
             return true;
         }, false, std::nullopt, &total);
@@ -1001,6 +1000,71 @@ int main() {
         verify(ids == std::vector<uint64_t>({1, 2}));
         verify(total == 2);
     }
+
+
+
+    {
+        auto txn = env.txn_rw();
+
+        env.insert_AltOrder(txn, "bbbb", 1001); // 1
+        env.insert_AltOrder(txn, "aaaa", 1234);
+        env.insert_AltOrder(txn, "bbbb", 1000); // 3
+        env.insert_AltOrder(txn, "bbbb", 1050); // 4
+        env.insert_AltOrder(txn, "aaaa", 1234);
+        env.insert_AltOrder(txn, "bbbb", 1002); // 6
+        env.insert_AltOrder(txn, "bbbb", 997); // 7
+        env.insert_AltOrder(txn, "bbbb", 999); // 8
+        env.insert_AltOrder(txn, "cccc", 1234);
+
+        txn.commit();
+    }
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
+        uint64_t total;
+
+        env.foreachDup_AltOrder__descByCreated(txn, "bbbb", [&](auto &view){
+            ids.push_back(view.primaryKeyId);
+            return true;
+        }, false, std::nullopt, &total);
+
+        verify(ids == std::vector<uint64_t>({7, 8, 3, 1, 6, 4}));
+        verify(total == 6);
+    }
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
+        uint64_t total;
+
+        env.foreachDup_AltOrder__descByCreated(txn, "bbbb", [&](auto &view){
+            ids.push_back(view.primaryKeyId);
+            return true;
+        }, true, std::nullopt, &total);
+
+        verify(ids == std::vector<uint64_t>({4, 6, 1, 3, 8, 7}));
+        verify(total == 6);
+    }
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
+        uint64_t total;
+
+        env.foreach_AltOrder__descByCreated(txn, [&](auto &view){
+            //std::cout << view.primaryKeyId << ": " << view._str() << std::endl;
+            ids.push_back(view.primaryKeyId);
+            return true;
+        }, false, std::nullopt, &total);
+
+        verify(ids == std::vector<uint64_t>({2, 5, 7, 8, 3, 1, 6, 4, 9}));
+        verify(total == 9);
+    }
+
 
 
     std::cout << "All tests OK." << std::endl;
