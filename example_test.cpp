@@ -1053,6 +1053,36 @@ int main() {
         auto txn = env.txn_ro();
 
         std::vector<uint64_t> ids;
+
+        std::string resume = genAltOrderVal(1000, 3);
+
+        env.foreachDup_AltOrder__descByCreated(txn, "bbbb", [&](auto &view){
+            ids.push_back(view.primaryKeyId);
+            return true;
+        }, false, resume);
+
+        verify(ids == std::vector<uint64_t>({3, 1, 6, 4}));
+    }
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
+
+        std::string resume = genAltOrderVal(1000, 3);
+
+        env.foreachDup_AltOrder__descByCreated(txn, "bbbb", [&](auto &view){
+            ids.push_back(view.primaryKeyId);
+            return true;
+        }, true, resume);
+
+        verify(ids == std::vector<uint64_t>({3, 8, 7}));
+    }
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
         uint64_t total;
 
         env.foreach_AltOrder__descByCreated(txn, [&](auto &view){
