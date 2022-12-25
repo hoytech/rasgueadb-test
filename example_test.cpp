@@ -1080,6 +1080,37 @@ int main() {
     }
 
     {
+        std::string k = "bbbb";
+
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
+
+        std::string myResume;
+
+        env.generic_foreachDup(txn, env.dbi_AltOrder, env.dbi_AltOrder__descByCreated, k, [&](uint64_t primaryKeyId, std::string_view v, std::string_view resume){
+            if (ids.size() == 3) {
+                myResume = resume;
+                return false;
+            }
+
+            example::environment::View_AltOrder view(primaryKeyId, v);
+            ids.push_back(view.primaryKeyId);
+            return true;
+        }, true, std::nullopt, nullptr, false, true);
+
+        verify(ids == std::vector<uint64_t>({4, 6, 1}));
+
+        env.generic_foreachDup(txn, env.dbi_AltOrder, env.dbi_AltOrder__descByCreated, k, [&](uint64_t primaryKeyId, std::string_view v, std::string_view resume){
+            example::environment::View_AltOrder view(primaryKeyId, v);
+            ids.push_back(view.primaryKeyId);
+            return true;
+        }, true, myResume, nullptr, false, true);
+
+        verify(ids == std::vector<uint64_t>({4, 6, 1, 3, 8, 7}));
+    }
+
+    {
         auto txn = env.txn_ro();
 
         std::vector<uint64_t> ids;
