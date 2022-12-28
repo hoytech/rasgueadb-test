@@ -1003,6 +1003,41 @@ int main() {
     }
 
 
+
+
+    {
+        auto txn = env.txn_rw();
+
+        env.insert_CustomComp(txn, "bbbb", 1001); // 1
+        env.insert_CustomComp(txn, "aaaa", 1234);
+        env.insert_CustomComp(txn, "bbbb", 1000); // 3
+        env.insert_CustomComp(txn, "bbbb", 1050); // 4
+        env.insert_CustomComp(txn, "aaaa", 1234);
+        env.insert_CustomComp(txn, "bbbb", 1002); // 6
+        env.insert_CustomComp(txn, "bbbb", 997); // 7
+        env.insert_CustomComp(txn, "bbbb", 999); // 8
+        env.insert_CustomComp(txn, "cccc", 1234);
+
+        txn.commit();
+    }
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
+
+        env.foreach_CustomComp__descByCreated(txn, [&](auto &view, std::string_view indexKey){
+            ParsedKey_StringUint64 parsedKey(indexKey);
+            if (view.primaryKeyId == 6) verify(parsedKey.n == 1002);
+            if (parsedKey.s != "bbbb") return false;
+            ids.push_back(view.primaryKeyId);
+            return true;
+        }, false, makeKey_StringUint64("bbbb", 0));
+
+        verify(ids == std::vector<uint64_t>({7, 8, 3, 1, 6, 4}));
+    }
+
+
     std::cout << "All tests OK." << std::endl;
 
     return 0;
