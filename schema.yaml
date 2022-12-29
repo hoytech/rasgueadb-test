@@ -115,3 +115,11 @@ tables:
 
     indexPrelude: |
       descByCreated = makeKey_StringUint64(v.desc(), v.created());
+
+  SimpleDups:
+    tableId: 8
+
+    fields:
+      - name: stuff
+        type: string
+        index: true

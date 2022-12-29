@@ -1004,7 +1004,6 @@ int main() {
 
 
 
-
     {
         auto txn = env.txn_rw();
 
@@ -1035,6 +1034,94 @@ int main() {
         }, false, makeKey_StringUint64("bbbb", 0));
 
         verify(ids == std::vector<uint64_t>({7, 8, 3, 1, 6, 4}));
+    }
+
+
+
+    {
+        auto txn = env.txn_rw();
+
+        auto check = [&](std::string_view k, uint64_t v, bool reverse, std::vector<uint64_t> expected){
+            std::vector<uint64_t> ids;
+
+            env.generic_foreachFull(txn, env.dbi_SimpleDups__stuff, k, lmdb::to_sv<uint64_t>(v), [&](auto k, auto v) {
+                uint64_t primaryKeyId = lmdb::from_sv<uint64_t>(v);
+                ids.push_back(primaryKeyId);
+                return true;
+            }, reverse);
+
+            if (ids != expected) {
+                std::cout << "Expected: ";
+                for (auto i : expected) std::cout << i << ", ";
+                std::cout << std::endl;
+
+                std::cout << "Got:      ";
+                for (auto i : ids) std::cout << i << ", ";
+                std::cout << std::endl;
+
+                verify(ids == expected);
+            }
+        };
+
+        env.insert_SimpleDups(txn, "AAAA"); // 1
+        env.insert_SimpleDups(txn, "HHHH"); // 2
+        env.insert_SimpleDups(txn, "HHHH"); // 3
+        env.insert_SimpleDups(txn, "HHHH"); // 4
+        env.insert_SimpleDups(txn, "AAAA"); // 5
+        env.insert_SimpleDups(txn, "ZZZZ"); // 6
+        env.insert_SimpleDups(txn, "HHHH"); // 7
+        env.insert_SimpleDups(txn, "HHHH"); // 8
+        env.insert_SimpleDups(txn, "HHHH"); // 9
+        env.insert_SimpleDups(txn, "ZZZZ"); // 10
+
+        check("HHHH", 1, false, {2, 3, 4, 7, 8, 9, 6, 10});
+        check("HHHH", 4, false, {4, 7, 8, 9, 6, 10});
+        check("HHHH", 5, false, {7, 8, 9, 6, 10});
+        check("HHHH", 9, false, {9, 6, 10});
+        check("HHHH", 5000, false, {6, 10});
+
+        check("AAAA", 0, false, {1, 5, 2, 3, 4, 7, 8, 9, 6, 10});
+        check("AAAA", 5, false, {5, 2, 3, 4, 7, 8, 9, 6, 10});
+        check("AAAA", 4, false, {5, 2, 3, 4, 7, 8, 9, 6, 10});
+        check("AAAA", 4000, false, {2, 3, 4, 7, 8, 9, 6, 10});
+
+        check("DDDD", 1000, false, {2, 3, 4, 7, 8, 9, 6, 10});
+
+        check("QQQQ", 100, false, {6, 10});
+        check("ZZZZ", 0, false, {6, 10});
+        check("ZZZZ", 6, false, {6, 10});
+        check("ZZZZ", 8, false, {10});
+        check("ZZZZ", 10, false, {10});
+        check("ZZZZ", 11, false, {});
+        check("ZZZZZ", 0, false, {});
+
+        // reverse
+
+        check("HHHH", 7, true, {7, 4, 3, 2, 5, 1});
+        check("HHHH", 2, true, {2, 5, 1});
+        check("HHHH", 5, true, {4, 3, 2, 5, 1});
+        check("HHHH", 5000, true, {9, 8, 7, 4, 3, 2, 5, 1});
+        check("HHHH", 1, true, {5, 1});
+
+        check("ZZZZ", 1000, true, {10, 6, 9, 8, 7, 4, 3, 2, 5, 1});
+        check("ZZZZ", 10, true, {10, 6, 9, 8, 7, 4, 3, 2, 5, 1});
+        check("ZZZZ", 9, true, {6, 9, 8, 7, 4, 3, 2, 5, 1});
+        check("ZZZZ", 6, true, {6, 9, 8, 7, 4, 3, 2, 5, 1});
+        check("ZZZZ", 5, true, {9, 8, 7, 4, 3, 2, 5, 1});
+        check("QQQQ", 100, true, {9, 8, 7, 4, 3, 2, 5, 1});
+
+        check("DDDD", 1000, true, {5, 1});
+        check("DDDD", 1, true, {5, 1});
+        check("AAAA", 1000, true, {5, 1});
+        check("AAAA", 6, true, {5, 1});
+        check("AAAA", 5, true, {5, 1});
+        check("AAAA", 4, true, {1});
+        check("AAAA", 1, true, {1});
+        check("AAAA", 0, true, {});
+        check("AAA", 100, true, {});
+
+
+        txn.abort();
     }
 
 
