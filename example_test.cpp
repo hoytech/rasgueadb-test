@@ -1079,11 +1079,13 @@ int main() {
         check("HHHH", 5, false, {7, 8, 9, 6, 10});
         check("HHHH", 9, false, {9, 6, 10});
         check("HHHH", 5000, false, {6, 10});
+        check("HHHH", std::numeric_limits<uint64_t>::max(), false, {6, 10});
 
         check("AAAA", 0, false, {1, 5, 2, 3, 4, 7, 8, 9, 6, 10});
         check("AAAA", 5, false, {5, 2, 3, 4, 7, 8, 9, 6, 10});
         check("AAAA", 4, false, {5, 2, 3, 4, 7, 8, 9, 6, 10});
         check("AAAA", 4000, false, {2, 3, 4, 7, 8, 9, 6, 10});
+        check("AAAA", std::numeric_limits<uint64_t>::max(), false, {2, 3, 4, 7, 8, 9, 6, 10});
 
         check("DDDD", 1000, false, {2, 3, 4, 7, 8, 9, 6, 10});
 
@@ -1101,8 +1103,11 @@ int main() {
         check("HHHH", 2, true, {2, 5, 1});
         check("HHHH", 5, true, {4, 3, 2, 5, 1});
         check("HHHH", 5000, true, {9, 8, 7, 4, 3, 2, 5, 1});
+        check("HHHH", std::numeric_limits<uint64_t>::max(), true, {9, 8, 7, 4, 3, 2, 5, 1});
         check("HHHH", 1, true, {5, 1});
+        check("HHHH", 0, true, {5, 1});
 
+        check("ZZZZ", std::numeric_limits<uint64_t>::max(), true, {10, 6, 9, 8, 7, 4, 3, 2, 5, 1});
         check("ZZZZ", 1000, true, {10, 6, 9, 8, 7, 4, 3, 2, 5, 1});
         check("ZZZZ", 10, true, {10, 6, 9, 8, 7, 4, 3, 2, 5, 1});
         check("ZZZZ", 9, true, {6, 9, 8, 7, 4, 3, 2, 5, 1});
@@ -1112,13 +1117,14 @@ int main() {
 
         check("DDDD", 1000, true, {5, 1});
         check("DDDD", 1, true, {5, 1});
+        check("AAAA", std::numeric_limits<uint64_t>::max(), true, {5, 1});
         check("AAAA", 1000, true, {5, 1});
         check("AAAA", 6, true, {5, 1});
         check("AAAA", 5, true, {5, 1});
         check("AAAA", 4, true, {1});
         check("AAAA", 1, true, {1});
         check("AAAA", 0, true, {});
-        check("AAA", 100, true, {});
+        check("AAA", std::numeric_limits<uint64_t>::max(), true, {});
 
 
         txn.abort();
