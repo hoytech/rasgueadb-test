@@ -28,6 +28,7 @@ int main() {
 
     env.open("db/");
 
+
     // Populate some records
 
     {
@@ -1081,6 +1082,8 @@ int main() {
         check("HHHH", 5000, false, {6, 10});
         check("HHHH", std::numeric_limits<uint64_t>::max(), false, {6, 10});
 
+        check(std::string(4, '\x00'), 0, false, {1, 5, 2, 3, 4, 7, 8, 9, 6, 10});
+        check(std::string(4, '\x00'), std::numeric_limits<uint64_t>::max(), false, {1, 5, 2, 3, 4, 7, 8, 9, 6, 10});
         check("AAAA", 0, false, {1, 5, 2, 3, 4, 7, 8, 9, 6, 10});
         check("AAAA", 5, false, {5, 2, 3, 4, 7, 8, 9, 6, 10});
         check("AAAA", 4, false, {5, 2, 3, 4, 7, 8, 9, 6, 10});
@@ -1108,6 +1111,8 @@ int main() {
         check("HHHH", 0, true, {5, 1});
 
         check("ZZZZ", std::numeric_limits<uint64_t>::max(), true, {10, 6, 9, 8, 7, 4, 3, 2, 5, 1});
+        check(std::string(4, '\xFF'), std::numeric_limits<uint64_t>::max(), true, {10, 6, 9, 8, 7, 4, 3, 2, 5, 1});
+        check(std::string(4, '\xFF'), 0, true, {10, 6, 9, 8, 7, 4, 3, 2, 5, 1});
         check("ZZZZ", 1000, true, {10, 6, 9, 8, 7, 4, 3, 2, 5, 1});
         check("ZZZZ", 10, true, {10, 6, 9, 8, 7, 4, 3, 2, 5, 1});
         check("ZZZZ", 9, true, {6, 9, 8, 7, 4, 3, 2, 5, 1});
