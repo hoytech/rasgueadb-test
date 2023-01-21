@@ -2,8 +2,6 @@ db: example
 
 tables:
   User:
-    tableId: 1
-
     fields:
       - name: userName
         type: string
@@ -16,8 +14,6 @@ tables:
         ## default type is uint64
 
   Person:
-    tableId: 2
-
     fields:
       - name: fullName
         type: string
@@ -46,8 +42,6 @@ tables:
 
 
   Phrase:
-    tableId: 3
-
     fields:
       - name: words
         type: string
@@ -66,8 +60,6 @@ tables:
         multi: true
 
   SomeRecord:
-    tableId: 4
-
     primaryKey: altId
 
     fields:
@@ -76,8 +68,6 @@ tables:
         type: string
 
   MultiRecs:
-    tableId: 5
-
     fields:
       - name: strs
         type: 'string[]'
@@ -90,8 +80,6 @@ tables:
         index: true
 
   NullIndices:
-    tableId: 6
-
     fields:
       - name: passwordHash
         type: ubytes
@@ -101,8 +89,6 @@ tables:
           includeZero: true
 
   CustomComp:
-    tableId: 7
-
     fields:
       - name: desc
         type: string
@@ -117,8 +103,6 @@ tables:
       descByCreated = makeKey_StringUint64(v.desc(), v.created());
 
   SimpleDups:
-    tableId: 8
-
     fields:
       - name: stuff
         type: string
