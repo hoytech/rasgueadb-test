@@ -1136,6 +1136,12 @@ int main() {
     }
 
 
+    //// Uncomment the following line to check if CLOEXEC is woring. You should *not* see a line like:
+    ////   sh      27541 user    4u   REG 202,16   122880 131179 /home/user/rasgueadb-test/db/data.mdb
+
+    //system("lsof -a -d 0-256 -p $$");
+
+
     std::cout << "All tests OK." << std::endl;
 
     return 0;
