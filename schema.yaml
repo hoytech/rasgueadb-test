@@ -107,3 +107,29 @@ tables:
       - name: stuff
         type: string
         index: true
+
+  MyOpaqueTable:
+    opaque: true
+    primaryKey: myAltId
+
+    indexPrelude: |
+      if (v.buf.size() < 3) throw hoytech::error("too short");
+      someStr = std::string(v.buf.substr(0,2));
+      someInt = (uint64_t)v.buf[2];
+      for (size_t i = 3; i < v.buf.size(); i++) someStrsMulti.push_back(std::string(v.buf.substr(i, 1)));
+
+    indices:
+      someStr: true
+      someInt:
+        integer: true
+      someStrsMulti:
+        multi: true
+
+  MyOpaqueTableAutoPrimary:
+    opaque: true
+
+    indexPrelude: |
+      someStr = std::string(v.buf);
+
+    indices:
+      someStr: true

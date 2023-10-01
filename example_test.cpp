@@ -757,6 +757,7 @@ int main() {
         env.insert_SomeRecord(txn, 60, "c");
         env.insert_SomeRecord(txn, 75, "e");
         env.insert_SomeRecord(txn, 50, "a");
+        verifyThrow(env.insert_SomeRecord(txn, 50, "a"), "duplicate insert into SomeRecord");
 
         txn.commit();
     }
@@ -1136,7 +1137,118 @@ int main() {
     }
 
 
-    //// Uncomment the following line to check if CLOEXEC is woring. You should *not* see a line like:
+
+
+    {
+        auto txn = env.txn_rw();
+
+        env.insert_MyOpaqueTable(txn, 2, "A\x07\x20");
+        env.insert_MyOpaqueTable(txn, 1, "CC\x20");
+        env.insert_MyOpaqueTable(txn, 3, "BB\x21");
+        env.insert_MyOpaqueTable(txn, 5, "DD\x22\x05\x06\x07");
+        env.insert_MyOpaqueTable(txn, 9, "BB\x23\x07\x08\x09");
+        env.insert_MyOpaqueTable(txn, 8, "DD\x23");
+
+        verifyThrow(env.insert_MyOpaqueTable(txn, 1, "AA\x20"), "duplicate insert into");
+
+        env.delete_MyOpaqueTable(txn, 3);
+
+        txn.commit();
+    }
+
+    {
+        auto txn = env.txn_ro();
+        auto view = env.lookup_MyOpaqueTable(txn, 5);
+
+        verify(view);
+        verify(view->primaryKeyId == 5);
+        verify(view->buf == "DD\x22\x05\x06\x07");
+
+        assert_zerocopy(env.lmdb_env.get_internal_map(), view->buf);
+    }
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
+
+        env.foreach_MyOpaqueTable__someStr(txn, [&](auto &view){
+            ids.push_back(view.primaryKeyId);
+            return true;
+        });
+
+        verify(ids == std::vector<uint64_t>({2, 9, 1, 5, 8}));
+    }
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
+
+        env.foreach_MyOpaqueTable__someInt(txn, [&](auto &view){
+            ids.push_back(view.primaryKeyId);
+            return true;
+        }, true, 0x22);
+
+        verify(ids == std::vector<uint64_t>({5, 2, 1}));
+    }
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
+
+        env.foreachDup_MyOpaqueTable__someStrsMulti(txn, "\x07", [&](auto &view){
+            ids.push_back(view.primaryKeyId);
+            return true;
+        });
+
+        verify(ids == std::vector<uint64_t>({5, 9}));
+    }
+
+
+
+
+    {
+        auto txn = env.txn_rw();
+
+        env.insert_MyOpaqueTableAutoPrimary(txn, "1111");
+        env.insert_MyOpaqueTableAutoPrimary(txn, "2222");
+        env.insert_MyOpaqueTableAutoPrimary(txn, "3333");
+        env.insert_MyOpaqueTableAutoPrimary(txn, "4444");
+
+        env.delete_MyOpaqueTableAutoPrimary(txn, 2);
+
+        txn.commit();
+    }
+
+    {
+        auto txn = env.txn_ro();
+
+        std::vector<uint64_t> ids;
+
+        env.foreach_MyOpaqueTableAutoPrimary(txn, [&](auto &view){
+            ids.push_back(view.primaryKeyId);
+            return true;
+        });
+
+        verify(ids == std::vector<uint64_t>({1, 3, 4}));
+    }
+
+    {
+        auto txn = env.txn_ro();
+        auto view = env.lookup_MyOpaqueTableAutoPrimary(txn, 3);
+
+        verify(view);
+        verify(view->primaryKeyId == 3);
+        verify(view->buf == "3333");
+
+        assert_zerocopy(env.lmdb_env.get_internal_map(), view->buf);
+    }
+
+
+
+    //// Uncomment the following line to check if CLOEXEC is working. You should *not* see a line like:
     ////   sh      27541 user    4u   REG 202,16   122880 131179 /home/user/rasgueadb-test/db/data.mdb
 
     //system("lsof -a -d 0-256 -p $$");
